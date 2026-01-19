@@ -1,2 +1,2 @@
 # api_yamdb
-api_yamdb
+Этот проект имитирует mdb сайт

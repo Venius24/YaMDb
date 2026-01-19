@@ -29,6 +29,8 @@ INSTALLED_APPS = [
     'djoser',
 
     'api',
+    'users',
+    'reviews',
 ]
 
 MIDDLEWARE = [
@@ -120,7 +122,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework.authentication.JWTAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
         # Если планируете использовать JWT, замените на JWTAuthentication
     ),
     'DEFAULT_PERMISSION_CLASSES': [

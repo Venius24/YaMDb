@@ -1,23 +1,11 @@
 from django.db import models
 
+# Create your models here.
+from django.db import models
+from django.contrib.auth import get_user_model
 
-class Title(models.Model):
-    name = models.CharField(max_length=256)
-    year = models.PositiveIntegerField()
-    category = models.ForeignKey(
-        'Category',
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name='titles'
-    )
-    genres = models.ManyToManyField(
-        'Genre',
-        related_name="titles", # Позволяет обращаться genre.titles.all()
-        verbose_name="Жанры"
-    )
 
-    def __str__(self):
-        return self.name
+User = get_user_model()
     
 
 class Category(models.Model):
@@ -36,6 +24,25 @@ class Genre(models.Model):
         return self.name
 
 
+class Title(models.Model):
+    name = models.CharField(max_length=256)
+    year = models.PositiveIntegerField()
+    category = models.ForeignKey(
+        'Category',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='titles'
+    )
+    genre = models.ManyToManyField(
+        'Genre',
+        related_name="titles", # Позволяет обращаться genre.titles.all()
+        verbose_name="Жанры"
+    )
+
+    def __str__(self):
+        return self.name
+
+
 class Review(models.Model):
     title = models.ForeignKey(
         Title,
@@ -44,7 +51,7 @@ class Review(models.Model):
     )
     text = models.TextField()
     author = models.ForeignKey(
-        'auth.User',
+        User,
         on_delete=models.CASCADE,
         related_name='reviews'
     )
@@ -63,7 +70,7 @@ class Comment(models.Model):
     )
     text = models.TextField()
     author = models.ForeignKey(
-        'auth.User',
+        User,
         on_delete=models.CASCADE,
         related_name='comments'
     )
