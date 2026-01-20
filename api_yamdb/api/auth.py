@@ -3,14 +3,19 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.exceptions import AuthenticationFailed
-from django.core.validators import EmailValidator
+from django.core.validators import EmailValidator, RegexValidator
 
 User = get_user_model()
 
 
 class SignUpSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True, validators=[EmailValidator()])
-    username = serializers.CharField(required=True, max_length=150)
+    email = serializers.EmailField(required=True, validators=[EmailValidator()], max_length=254)
+    username = serializers.CharField(required=True,
+                                     max_length=150,
+                                     validators=[RegexValidator(
+                                         regex=r'^[\w.@+-]+\Z',
+                                         message='Имя пользователя содержит недопустимый символ'
+                                     )])
 
     def validate_username(self, value):
         if value.lower() == 'me':
@@ -33,29 +38,8 @@ class SignUpSerializer(serializers.Serializer):
         return data
 
 class TokenByCodeSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    confirmation_code = serializers.CharField()
-
-    def validate(self, attrs):
-        username = attrs.get('username')
-        confirmation_code = attrs.get('confirmation_code')
-
-        try:
-            # Ищем пользователя по username
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise AuthenticationFailed('Пользователь не найден')
-
-        # Проверяем код (допустим, он в поле модели)
-        if user.confirmation_code != confirmation_code:
-            raise AuthenticationFailed('Неверный код подтверждения')
-
-        # Если всё ок — генерируем токены
-        refresh = RefreshToken.for_user(user)
-        return {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
-        }
+    username = serializers.CharField(required=True)
+    confirmation_code = serializers.CharField(required=True)
 
 
 
@@ -70,6 +54,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth import authenticate
 from rest_framework.permissions import AllowAny
+from django.shortcuts import get_object_or_404
 
 
 class SignUpView(APIView):
@@ -104,19 +89,25 @@ class SignUpView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class GetTokenByCodeView(TokenObtainPairView):
+class GetTokenByCodeView(APIView):
     permission_classes = [AllowAny] # Доступно без токена
-
+    
     def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        confirmation_code = request.data.get('confirmation_code')
+        serializer = TokenByCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
         
-        user = authenticate(username=username, confirmation_code=confirmation_code)
+        username = serializer.validated_data['username']
+        confirmation_code = serializer.validated_data['confirmation_code']
         
-        if user:
-            refresh = self.get_token(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+        user = User.objects.filter(username=username).first()
+        if not user:
+            return Response({'detail': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        if user.confirmation_code != confirmation_code:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }, status=status.HTTP_200_OK)

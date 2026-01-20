@@ -1,4 +1,6 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
 
 class User(AbstractUser):
@@ -17,6 +19,19 @@ class User(AbstractUser):
     )
     # Можно добавить роль (например, для прав доступа)
     bio = models.TextField('о себе', blank=True)
+
+    username_validator = RegexValidator(
+        regex=r'^[\w.@+-]+\Z',
+        message='Имя пользователя содержит недопустимый символ'
+    )
+
+
+    username = models.CharField(
+        'Имя пользователя',
+        max_length=150,
+        unique=True,
+        validators=[username_validator], # Добавляем валидатор сюда
+    )
 
     # Указываем, что email теперь используется для логина вместо username (если нужно)
     # USERNAME_FIELD = 'email' 

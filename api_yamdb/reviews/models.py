@@ -27,6 +27,7 @@ class Genre(models.Model):
 class Title(models.Model):
     name = models.CharField(max_length=256)
     year = models.PositiveIntegerField()
+    description = models.TextField(blank=True, null=True)
     category = models.ForeignKey(
         'Category',
         on_delete=models.SET_NULL,
@@ -57,6 +58,9 @@ class Review(models.Model):
     )
     score = models.PositiveSmallIntegerField()
     pub_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('title', 'author')
 
     def __str__(self):
         return f"Review by {self.author} on {self.title}"

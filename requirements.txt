@@ -10,3 +10,4 @@ Pillow
 djangorestframework-simplejwt==4.7.2
 djoser
 django-filter==2.4.0
+drf-nested-routers==0.92
