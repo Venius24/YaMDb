@@ -30,10 +30,14 @@ class SignUpSerializer(serializers.Serializer):
         user_by_username = User.objects.filter(username=username).first()
         user_by_email = User.objects.filter(email=email).first()
 
+        errors = {}
         if user_by_username and user_by_username.email != email:
-            raise serializers.ValidationError("Этот username уже занят другим email.")
+            errors['username'] = "Этот username уже занят другим email."
         if user_by_email and user_by_email.username != username:
-            raise serializers.ValidationError("Этот email уже занят другим username.")
+            errors['email'] = "Этот email уже занят другим username."
+        
+        if errors:
+            raise serializers.ValidationError(errors)
             
         return data
 
@@ -108,6 +112,5 @@ class GetTokenByCodeView(APIView):
         
         refresh = RefreshToken.for_user(user)
         return Response({
-            'refresh': str(refresh),
-            'access': str(refresh.access_token),
+            'token': str(refresh.access_token),
         }, status=status.HTTP_200_OK)
