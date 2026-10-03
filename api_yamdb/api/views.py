@@ -27,7 +27,7 @@ class ListCreateDestroyViewSet(mixins.ListModelMixin,
 
 
 class GenreViewSet(ListCreateDestroyViewSet):
-    queryset = Genre.objects.all()
+    queryset = Genre.objects.order_by('pk')
     serializer_class = GenreSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = (filters.SearchFilter,)
@@ -36,7 +36,7 @@ class GenreViewSet(ListCreateDestroyViewSet):
 
 
 class CategoryViewSet(ListCreateDestroyViewSet):
-    queryset = Category.objects.all()
+    queryset = Category.objects.order_by('pk')
     serializer_class = CategorySerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = (filters.SearchFilter,)
@@ -48,7 +48,7 @@ class CategoryViewSet(ListCreateDestroyViewSet):
 
 
 class TitleViewSet(viewsets.ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.order_by('pk')
     serializer_class = TitleSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends = (django_filters.rest_framework.DjangoFilterBackend,)
@@ -63,7 +63,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         title_id = self.kwargs.get('title_pk')
-        return Review.objects.filter(title_id=title_id)
+        get_object_or_404(Title, id=title_id)
+        return Review.objects.filter(title_id=title_id).order_by('pk')
 
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_pk')
@@ -78,11 +79,14 @@ class CommentViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         review_id = self.kwargs.get('review_pk')
-        return Comment.objects.filter(review_id=review_id)
+        title_id = self.kwargs.get('title_pk')
+        get_object_or_404(Review, id=review_id, title_id=title_id)
+        return Comment.objects.filter(review_id=review_id).order_by('pk')
 
     def perform_create(self, serializer):
         review_id = self.kwargs.get('review_pk')
-        review = get_object_or_404(Review, id=review_id)
+        title_id = self.kwargs.get('title_pk')
+        review = get_object_or_404(Review, id=review_id, title_id=title_id)
         serializer.save(author=self.request.user, review=review)
 
 
@@ -90,7 +94,7 @@ class UserPagination(PageNumberPagination):
     page_size = 10
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.order_by('pk')
     pagination_class = UserPagination
     serializer_class = UserSerializer
     filter_backends = (filters.SearchFilter,)
